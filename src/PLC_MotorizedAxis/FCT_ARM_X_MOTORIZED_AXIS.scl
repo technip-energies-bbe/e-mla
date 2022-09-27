@@ -4,111 +4,114 @@ VERSION : 0.1
       activEnable : Bool;   // Conditions d'activation de l'Enable
       spAxisDrive : Real;   // Setpoint (-1=-13824 pts;+1=+13824 pts)
       driveRDY : Bool;   // Retour info du variateur
-      activWarning : Bool;   // Conditions d'activation du réchauffage
+      resetDrive : Bool;   // Orde de reset du variateur
    END_STRUCT;
 
 END_TYPE
 
-TYPE "typeArmActuators"
+TYPE "typeOptionDrive"
 VERSION : 0.1
    STRUCT
-      enableAxisDrive : Bool;   // ACTIVATION DU VARIATEUR
-      motionAxisDrive : Bool;   // ORDRE DE MARCHE (1 SEUL ORDRE = MAV)
-      cmdAxisDrive : Real;   // PILOTAGE DRIVE AXIS
-      motorWarming : Bool;   // RECHAUFFAGE MOTEUR
+      mode : String [20] := 'direct';   // Choix ("direct", "directOnLine")
+      motorTempMonitoring : String [4] := 'none';   // Choix ("none", "ptc", "full")
+      isDriveMonitoring : Bool;   // Activation monitoring de la température
+      isHeater : Bool;   // Activation réchauffage
    END_STRUCT;
 
 END_TYPE
 
-FUNCTION_BLOCK "FCT_SLEWING_AXIS_DRIVE"
+FUNCTION "FCT_ARM_X_MOTORIZED_AXIS" : Void
 { S7_Optimized_Access := 'TRUE' }
 VERSION : 0.1
    VAR_INPUT 
-      ACTIV_ENABLE : Bool;   // ACTIVATION DU ENABLE
-      SP_SLEWING_DRIVE : Real;   // SETPOINT (-1.0=-13824;+1.0=13824)
-      SLEWING_DRIVE_RDY : Bool;   // RETOUR INFO DU VARIATEUR
-      ACTIV_WARMING : Bool;   // ACTIVATION DU RECHAUFFAGE MOTEUR (MOTEUR A L'ARRET)
+      inputs : "typeArmInVFD";
+      motorMaxTemp : Bool;   // Retour d'info du capteur PTC (contact sec)
+      motorTemp : Array[1..3] of Real;   // Retour d'infos des sondes PT100
+      activWarmingOrder : Bool;   // Conditions d'activation de l'ordre de réchauffage moteurs
+      Options : "typeOptionDrive";
    END_VAR
 
    VAR_OUTPUT 
-      ENABLE_SLEWING_DRIVE : Bool;
-      MOTION_SLEWING : Bool;   // ORDRE DE MARCHE (1 SEUL ORDRE = MAV)
-      CMD_DRIVE_SLEWING : Real;   // PILOTAGE DRIVE SLEWING (-13824=DROITE ; +13824=GAUCHE)
-      CMD_MOTOR_WARMING : Bool;   // RECHAUFFAGE MOTEUR
+      enableAxisDrive : Bool;   // Activation du variateur
+      motionAxisDrive : Bool;   // Ordre de marche (1 seul ordre = MAV)
+      cmdAxisDrive : Real;   // Consigne de pilotage du variateur
+      resetAxisDrive : Bool;   // Reset du varaiteur (suite à défauts)
+      cmdWarmingMotor : Bool;   // Ordre Réchauffage du moteur
+      Mode_Name : String;   // test d'affichage du mode
+      TempMonitor_Name : String;   // test d'affichage du monotoring
    END_VAR
 
 
 BEGIN
 	//Initialisation
-	#CMD_DRIVE_SLEWING := 0.0;
+	#cmdAxisDrive := 0.0;
 	
 	
 	// Enable Management
-	IF #ACTIV_ENABLE = TRUE THEN
-	    #ENABLE_SLEWING_DRIVE := TRUE;
+	IF #inputs.activEnable = TRUE THEN
+	    #enableAxisDrive := TRUE;
 	ELSE
-	    #ENABLE_SLEWING_DRIVE:= FALSE;
+	    #enableAxisDrive := FALSE;
 	END_IF;
 	
 	// Motion Management
-	IF #ENABLE_SLEWING_DRIVE = TRUE AND #SP_SLEWING_DRIVE <> 0.0 THEN
-	    #MOTION_SLEWING := TRUE;
+	IF #inputs.activEnable = TRUE AND #inputs.spAxisDrive <> 0.0 THEN
+	    #motionAxisDrive := TRUE;
 	ELSE
-	    #MOTION_SLEWING := FALSE;
+	    #motionAxisDrive := FALSE;
 	END_IF;
 	
 	
 	// Drive Setpoint Management
-	IF #SP_SLEWING_DRIVE <>0.0 THEN
-	    #CMD_DRIVE_SLEWING := #SP_SLEWING_DRIVE * 13824.0;
+	IF #inputs.spAxisDrive <> 0.0 THEN
+	    #cmdAxisDrive := #inputs.spAxisDrive * 13824.0;
 	ELSE
-	    #CMD_DRIVE_SLEWING := 0.0;
+	    #cmdAxisDrive := 0.0;
 	END_IF;
 	
 	
 	// Warming Management
-	IF #ACTIV_WARMING = TRUE THEN
-	    #CMD_MOTOR_WARMING := TRUE;
+	IF #activWarmingOrder = TRUE THEN
+	    #cmdWarmingMotor := TRUE;
 	ELSE
-	    #CMD_MOTOR_WARMING := FALSE;
+	    #cmdWarmingMotor := FALSE;
 	END_IF;
-END_FUNCTION_BLOCK
-
-FUNCTION_BLOCK "FCT_ARM_X_MOTORIZED_AXIS"
-{ S7_Optimized_Access := 'TRUE' }
-VERSION : 0.1
-   VAR_INPUT 
-      inputs : "typeArmInVFD";
-   END_VAR
-
-   VAR_OUTPUT 
-      ouputs : "typeArmActuators";
-   END_VAR
-
-   VAR 
-      FCT_SLEWING_AXIS_DRIVE_Instance : "FCT_SLEWING_AXIS_DRIVE";
-   END_VAR
-
-
-BEGIN
-	// Call Sub-Routine
-	#FCT_SLEWING_AXIS_DRIVE_Instance(ACTIV_ENABLE:=#inputs.activEnable,
-	                                 SP_SLEWING_DRIVE:=#inputs.spAxisDrive,
-	                                 SLEWING_DRIVE_RDY:=#inputs.driveRDY,
-	                                 ACTIV_WARMING:=#inputs.activWarning,
-	                                 ENABLE_SLEWING_DRIVE=>#ouputs.enableAxisDrive,
-	                                 MOTION_SLEWING=>#ouputs.motionAxisDrive,
-	                                 CMD_DRIVE_SLEWING=>#ouputs.cmdAxisDrive,
-	                                 CMD_MOTOR_WARMING=>#ouputs.motorWarming);
 	
 	
+	// Reset Management
+	IF #inputs.resetDrive = TRUE THEN
+	    #resetAxisDrive := TRUE;
+	ELSE
+	    #resetAxisDrive := FALSE;
+	END_IF;
 	
 	
-	
-	
-	
-	
-	
-	
-END_FUNCTION_BLOCK
+	// Mode Management
+	//choix "direct" ou "directOnLine"
+	IF #Options.mode = 'direct' THEN
+	    #Mode_Name := 'direct';
+	END_IF;
+	IF #Options.mode = 'directonline' THEN
+	    #Mode_Name := 'directOnLine';
+	END_IF;
+	IF #Options.mode <>'direct' AND #Options.mode <>'directonline'THEN
+	    #Mode_Name := 'Error';
+	END_IF;
+	    
+	    
+	// Motor Temperature Monitoring Management
+	//choix "None" ou "PTC" ou "Full"
+	IF #Options.motorTempMonitoring = 'none' THEN
+	    #TempMonitor_Name := 'none';
+	END_IF;
+	IF #Options.motorTempMonitoring = 'ptc' THEN
+	    #TempMonitor_Name := 'PTC';
+	END_IF;
+	IF #Options.motorTempMonitoring = 'full' THEN
+	    #TempMonitor_Name := 'full';
+	END_IF;
+	IF #Options.motorTempMonitoring <> 'none' AND #Options.motorTempMonitoring <> 'PTC' AND #Options.motorTempMonitoring <> 'full'THEN
+	    #TempMonitor_Name := 'Error';
+	END_IF;
+END_FUNCTION
 
