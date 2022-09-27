@@ -1,0 +1,210 @@
+﻿FUNCTION_BLOCK "downlinkMapping"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      outputsToDownlinkData : "typeRemoteOutputs";
+      addrDownlinkHeader : HW_IO;
+      addrDownlinkData : HW_IO;
+   END_VAR
+
+   VAR 
+      downlinkData { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct
+         header { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct
+            baseUnitNumber { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            watchdogCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+         END_STRUCT;
+         data { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct
+            led1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            led2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            led3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare5 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare6 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare7 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare8 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare9 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare10 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare11 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare12 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare13 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare14 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare15 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare16 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+            spare17 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+         END_STRUCT;
+      END_STRUCT;
+      retValueHeader : Int;
+      retValueDatas : Int;
+   END_VAR
+
+
+BEGIN
+	//Mapping data par data
+	//Mapping Header
+	#downlinkData.header.baseUnitNumber := #outputsToDownlinkData.header.baseUnitNumber; // Not used in base unit (for future developments)
+	#downlinkData.header.watchdogCounter := #outputsToDownlinkData.header.watchdogCounter;
+	
+	//Mapping des leds de selection
+	#downlinkData.data.led1.%X0 := #outputsToDownlinkData.data.armSelectionLight[0];
+	#downlinkData.data.led1.%X1 := #outputsToDownlinkData.data.armSelectionLight[1];
+	#downlinkData.data.led1.%X2 := #outputsToDownlinkData.data.armSelectionLight[2];
+	#downlinkData.data.led1.%X3 := #outputsToDownlinkData.data.armSelectionLight[3];
+	#downlinkData.data.led1.%X4 := #outputsToDownlinkData.data.armSelectionLight[4];
+	#downlinkData.data.led1.%X5 := #outputsToDownlinkData.data.armSelectionLight[5];
+	#downlinkData.data.led1.%X6 := #outputsToDownlinkData.data.armSelectionLight[6];
+	#downlinkData.data.led1.%X7 := #outputsToDownlinkData.data.armSelectionLight[7];
+	#downlinkData.data.led2.%X0 := #outputsToDownlinkData.data.armSelectionLight[8];
+	
+	//Mapping des leds fonctions
+	#downlinkData.data.led2.%X1 := #outputsToDownlinkData.data.pumpRunningFault;
+	#downlinkData.data.led2.%X2 := #outputsToDownlinkData.data.pumpStop;
+	#downlinkData.data.led2.%X3 := #outputsToDownlinkData.data.armLock;
+	#downlinkData.data.led2.%X4 := #outputsToDownlinkData.data.armParked;
+	//#downlinkData.led2.%X5 := #outputsToDownlinkData.data.armUnparked; //NOT USED IN PLC
+	#downlinkData.data.led2.%X6 := #outputsToDownlinkData.data.ersValvesClosed;
+	#downlinkData.data.led2.%X7 := #outputsToDownlinkData.data.st80Slewing;
+	#downlinkData.data.led3.%X0 := #outputsToDownlinkData.data.flange;
+	#downlinkData.data.led3.%X1 := #outputsToDownlinkData.data.couplerOperations;
+	#downlinkData.data.led3.%X2 := #outputsToDownlinkData.data.conventionalMode;
+	#downlinkData.data.led3.%X3 := #outputsToDownlinkData.data.easyDrive;
+	#downlinkData.data.led3.%X4 := #outputsToDownlinkData.data.automaticConnection;
+	
+	//Envoi avec dpwr_dat vers addr
+	#retValueHeader := DPWR_DAT(LADDR := #addrDownlinkHeader, RECORD := #downlinkData.header);
+	#retValueDatas := DPWR_DAT(LADDR := #addrDownlinkData, RECORD := #downlinkData.data);
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK "uplinkMapping"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      addrUplinkHeader : HW_IO;
+      addrUplinkData : HW_IO;
+   END_VAR
+
+   VAR_OUTPUT 
+      inputsFromRemote : "typeRemoteInputs";
+   END_VAR
+
+   VAR 
+      uplinkHeader : Struct
+         statusByte : Byte;
+         watchdog : Byte;
+      END_STRUCT;
+      uplinkData : Array[1..20] of Byte;
+   END_VAR
+
+   VAR_TEMP 
+      uplinkHeaderReturnValue : Int;
+      uplinkDataReturnValue : Int;
+      i : Int;
+   END_VAR
+
+
+BEGIN
+	//Read of 2 bytes uplink header (Status Byte and Watchdog)
+	#uplinkHeaderReturnValue := DPRD_DAT(LADDR := #addrUplinkHeader, RECORD => #uplinkHeader);
+	#uplinkDataReturnValue := DPRD_DAT(LADDR := #addrUplinkData, RECORD => #uplinkData);
+	
+	//Mapping of inputs from Remote
+	
+	//Mapping of Status Byte & Watchdog
+	#inputsFromRemote.header.statusByte := #uplinkHeader.statusByte;
+	#inputsFromRemote.header.watchdog := #uplinkHeader.watchdog;
+	
+	//Mapping of ARM SELECTION ROTARY SWITCH SR1
+	#inputsFromRemote.data.armSelection[0] := #uplinkData[1].%X0;
+	#inputsFromRemote.data.armSelection[1] := #uplinkData[1].%X1;
+	#inputsFromRemote.data.armSelection[2] := #uplinkData[1].%X2;
+	#inputsFromRemote.data.armSelection[3] := #uplinkData[1].%X3;
+	#inputsFromRemote.data.armSelection[4] := #uplinkData[1].%X4;
+	#inputsFromRemote.data.armSelection[5] := #uplinkData[1].%X5;
+	#inputsFromRemote.data.armSelection[6] := #uplinkData[1].%X6;
+	#inputsFromRemote.data.armSelection[7] := #uplinkData[1].%X7;
+	#inputsFromRemote.data.armSelection[8] := #uplinkData[2].%X0;
+	#inputsFromRemote.data.armSelection[9] := #uplinkData[2].%X1;
+	
+	//Mapping of DRIVE MODE SELECTION ROTARY SWITCH SR2
+	#inputsFromRemote.data.driveModeSelection[0] := #uplinkData[2].%X2;
+	#inputsFromRemote.data.driveModeSelection[1] := #uplinkData[2].%X4;
+	#inputsFromRemote.data.driveModeSelection[2] := #uplinkData[2].%X5;
+	#inputsFromRemote.data.driveModeSelection[3] := #uplinkData[2].%X6;
+	#inputsFromRemote.data.driveModeSelection[4] := #uplinkData[3].%X0;
+	#inputsFromRemote.data.driveModeSelection[5] := #uplinkData[3].%X1;
+	
+	//Mapping of SETTINGS ROTARY SWITCH SR3
+	#inputsFromRemote.data.settingRotarySwitch[0] := #uplinkData[3].%X2;
+	#inputsFromRemote.data.settingRotarySwitch[1] := #uplinkData[3].%X3;
+	#inputsFromRemote.data.settingRotarySwitch[2] := #uplinkData[3].%X4;
+	#inputsFromRemote.data.settingRotarySwitch[3] := #uplinkData[3].%X5;
+	#inputsFromRemote.data.settingRotarySwitch[4] := #uplinkData[3].%X6;
+	#inputsFromRemote.data.settingRotarySwitch[5] := #uplinkData[3].%X7;
+	
+	//Mapping of EMERGENCY PB S0 & FMC VALID SA5 TPB
+	#inputsFromRemote.data.emergencyStopHPU := #uplinkData[4].%X0;
+	#inputsFromRemote.data.fmcValid := #uplinkData[4].%X6;
+	
+	//Mapping of JOYSTICKS SA1 / SA2 / SA3 / SA4 / SA5
+	#inputsFromRemote.data.propLeftJoystickUpDown := #uplinkData[7];
+	#inputsFromRemote.data.propLeftJoystickLeftRight := #uplinkData[8];
+	#inputsFromRemote.data.propRightJoystickUpDown := #uplinkData[9];
+	#inputsFromRemote.data.propRightJoystickLeftRight := #uplinkData[10];
+	#inputsFromRemote.data.propFunctionsJoystick := #uplinkData[11];
+	
+	
+	
+	
+	
+	
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK "rcuLocalProcess"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      inputsFromRemote : "typeRemoteInputs";
+   END_VAR
+
+   VAR_OUTPUT 
+      outputsToDownlink : "typeRemoteOutputs";
+   END_VAR
+
+
+BEGIN
+	//Développement du process interne de la télécommande
+	//Allumage des leds, réunion des conditions particulières etc
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK "radioManagement"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      addrUplinkHeader : HW_IO;
+      addrUplinkData : HW_IO;
+      addrDownlinkHeader : HW_IO;
+      addrDownlinkData : HW_IO;
+   END_VAR
+
+   VAR_OUTPUT 
+      remoteInputs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "typeRemoteInputs";
+      remoteOutputs : "typeRemoteOutputs";
+   END_VAR
+
+
+BEGIN
+	"uplinkMapping_DB"(addrUplinkHeader:= #addrUplinkHeader,
+	                   addrUplinkData:= #addrUplinkData,
+	                   inputsFromRemote=>#remoteInputs);
+	"rcuLocalProcess_DB"(inputsFromRemote:=#remoteInputs,
+	                     outputsToDownlink=>#remoteOutputs);
+	"downlinkMapping_DB"(outputsToDownlinkData:= #remoteOutputs,
+	                    addrDownlinkHeader:=#addrDownlinkHeader,
+	                    addrDownlinkData:=#addrDownlinkData);
+	
+	
+	
+END_FUNCTION_BLOCK
+

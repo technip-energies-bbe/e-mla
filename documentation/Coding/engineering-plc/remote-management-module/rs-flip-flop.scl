@@ -1,0 +1,7 @@
+if(#reset := TRUE)
+then
+	#out := FALSE;
+elsif(#set := TRUE)
+then
+	#out := TRUE;
+END_IF;

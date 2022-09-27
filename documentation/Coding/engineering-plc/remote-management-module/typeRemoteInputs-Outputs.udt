@@ -1,0 +1,49 @@
+﻿TYPE "typeRemoteInputs"
+VERSION : 0.1
+   STRUCT
+      header : Struct
+         statusByte : Byte;
+         watchdog : Byte;
+      END_STRUCT;
+      data : Struct
+         armSelection : Array[0..9] of Bool;
+         driveModeSelection : Array[0..5] of Bool;
+         settingRotarySwitch : Byte;
+         emergencyStopHPU : Bool;
+         fmcValid : Bool;
+         propLeftJoystickUpDown : Byte;
+         propLeftJoystickLeftRight : Byte;
+         propRightJoystickUpDown : Byte;
+         propRightJoystickLeftRight : Byte;
+         propFunctionsJoystick : Byte;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeRemoteOutputs"
+VERSION : 0.1
+   STRUCT
+      header : Struct
+         baseUnitNumber : Byte;
+         watchdogCounter : Byte;
+      END_STRUCT;
+      data : Struct
+         armSelectionLight : Array[0..8] of Bool;
+         pumpRunningFault : Bool;
+         pumpStop : Bool;
+         armLock : Bool;
+         armParked : Bool;
+         armUnparked : Bool;
+         ersValvesClosed : Bool;
+         st80Slewing : Bool;
+         flange : Bool;
+         couplerOperations : Bool;
+         conventionalMode : Bool;
+         easyDrive : Bool;
+         automaticConnection : Bool;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+
