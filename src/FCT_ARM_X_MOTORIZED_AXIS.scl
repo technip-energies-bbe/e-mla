@@ -60,7 +60,7 @@ VERSION : 0.1
 
 BEGIN
 	//Initialisation
-	#cmdAxisDrive := 0.0;
+	//#cmdAxisDrive := 0.0;
 	
 	
 	// Enable Management
