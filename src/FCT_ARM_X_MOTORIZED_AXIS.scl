@@ -1,0 +1,133 @@
+﻿TYPE "typeWiredInterfaceDrive"
+VERSION : 0.1
+   STRUCT
+      activEnable : Bool;   // Conditions d'activation de l'Enable
+      spAxisDrive : Real;   // Setpoint (-1=-13824 pts;+1=+13824 pts)
+      driveRDY : Bool;   // Retour info du variateur
+      resetDrive : Bool;   // Orde de reset du variateur
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeOptionDrive"
+VERSION : 0.1
+   STRUCT
+      mode : String [20] := 'direct';   // Choix ("direct", "directonline")
+      motorTempMonitoring : String [4] := 'none';   // Choix ("none", "ptc", "full")
+      isDriveMonitoring : Bool;   // Activation monitoring de la température
+      isHeater : Bool;   // Activation réchauffage
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeMotorTempInterfaceDrive"
+VERSION : 0.1
+   STRUCT
+      motorMaxTemp : Bool;   // Retour d'info du capteur PTC (contact sec)
+      motorTemp : Array[1..3] of Real;   // Retour d'infos des sondes PT100
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeWarmingInterfaceDrive"
+VERSION : 0.1
+   STRUCT
+      activOrder : Bool;   // Conditions d'activation de l'ordre de réchauffage moteurs
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION "FCT_ARM_X_MOTORIZED_AXIS" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      wiredInterface : "typeWiredInterfaceDrive";
+      temperatureInterface : "typeMotorTempInterfaceDrive";
+      warmingInterface : "typeWarmingInterfaceDrive";
+      optionsInterface : "typeOptionDrive";
+   END_VAR
+
+   VAR_OUTPUT 
+      enableAxisDrive : Bool;   // Activation du variateur
+      motionAxisDrive : Bool;   // Ordre de marche (1 seul ordre = MAV)
+      cmdAxisDrive : Real;   // Consigne de pilotage du variateur
+      resetAxisDrive : Bool;   // Reset du varaiteur (suite à défauts)
+      cmdWarmingMotor : Bool;   // Ordre Réchauffage du moteur
+      Mode_Name : String;   // test d'affichage du mode
+      TempMonitor_Name : String;   // test d'affichage du monotoring
+   END_VAR
+
+
+BEGIN
+	//Initialisation
+	#cmdAxisDrive := 0.0;
+	
+	
+	// Enable Management
+	IF #wiredInterface.activEnable = TRUE THEN
+	    #enableAxisDrive := TRUE;
+	ELSE
+	    #enableAxisDrive := FALSE;
+	END_IF;
+	
+	// Motion Management
+	IF #wiredInterface.activEnable = TRUE AND #wiredInterface.spAxisDrive <> 0.0 THEN
+	    #motionAxisDrive := TRUE;
+	ELSE
+	    #motionAxisDrive := FALSE;
+	END_IF;
+	
+	
+	// Drive Setpoint Management
+	IF #wiredInterface.spAxisDrive <> 0.0 THEN
+	    #cmdAxisDrive := #wiredInterface.spAxisDrive * 13824.0;
+	ELSE
+	    #cmdAxisDrive := 0.0;
+	END_IF;
+	
+	
+	// Warming Management
+	IF #warmingInterface.activOrder = TRUE THEN
+	    #cmdWarmingMotor := TRUE;
+	ELSE
+	    #cmdWarmingMotor := FALSE;
+	END_IF;
+	
+	
+	// Reset Management
+	IF #wiredInterface.resetDrive = TRUE THEN
+	    #resetAxisDrive := TRUE;
+	ELSE
+	    #resetAxisDrive := FALSE;
+	END_IF;
+	
+	
+	// Mode Management
+	//choix "direct" ou "directOnLine"
+	IF #optionsInterface.mode = 'direct' THEN
+	    #Mode_Name := 'direct';
+	END_IF;
+	IF #optionsInterface.mode = 'directonline' THEN
+	    #Mode_Name := 'directOnLine';
+	END_IF;
+	IF #optionsInterface.mode <>'direct' AND #optionsInterface.mode <>'directonline'THEN
+	    #Mode_Name := 'Error';
+	END_IF;
+	    
+	    
+	// Motor Temperature Monitoring Management
+	//choix "None" ou "PTC" ou "Full"
+	IF #optionsInterface.motorTempMonitoring = 'none' THEN
+	    #TempMonitor_Name := 'none';
+	END_IF;
+	IF #optionsInterface.motorTempMonitoring = 'ptc' THEN
+	    #TempMonitor_Name := 'PTC';
+	END_IF;
+	IF #optionsInterface.motorTempMonitoring = 'full' THEN
+	    #TempMonitor_Name := 'full';
+	END_IF;
+	IF #optionsInterface.motorTempMonitoring <> 'none' AND #optionsInterface.motorTempMonitoring <> 'ptc' AND #optionsInterface.motorTempMonitoring <> 'full'THEN
+	    #TempMonitor_Name := 'Error';
+	END_IF;
+END_FUNCTION
+
