@@ -37,7 +37,7 @@ VERSION : 0.1
 
 END_TYPE
 
-FUNCTION "FCT_ARM_X_MOTORIZED_AXIS" : Void
+FUNCTION "FCT_ARM_X_DIRECT_AXIS" : Void
 { S7_Optimized_Access := 'TRUE' }
 VERSION : 0.1
    VAR_INPUT 
@@ -53,7 +53,6 @@ VERSION : 0.1
       cmdAxisDrive : Real;   // Consigne de pilotage du variateur
       resetAxisDrive : Bool;   // Reset du varaiteur (suite à défauts)
       cmdWarmingMotor : Bool;   // Ordre Réchauffage du moteur
-      Mode_Name : String;   // test d'affichage du mode
       TempMonitor_Name : String;   // test d'affichage du monotoring
    END_VAR
 
@@ -64,14 +63,14 @@ BEGIN
 	
 	
 	// Enable Management
-	IF #wiredInterface.activEnable = TRUE THEN
+	IF #optionsInterface.mode = 'direct' AND #wiredInterface.activEnable = TRUE THEN
 	    #enableAxisDrive := TRUE;
 	ELSE
 	    #enableAxisDrive := FALSE;
 	END_IF;
 	
 	// Motion Management
-	IF #wiredInterface.activEnable = TRUE AND #wiredInterface.spAxisDrive <> 0.0 THEN
+	IF #optionsInterface.mode = 'direct' AND #wiredInterface.activEnable = TRUE AND #wiredInterface.spAxisDrive <> 0.0 THEN
 	    #motionAxisDrive := TRUE;
 	ELSE
 	    #motionAxisDrive := FALSE;
@@ -102,19 +101,7 @@ BEGIN
 	END_IF;
 	
 	
-	// Mode Management
-	//choix "direct" ou "directOnLine"
-	IF #optionsInterface.mode = 'direct' THEN
-	    #Mode_Name := 'direct';
-	END_IF;
-	IF #optionsInterface.mode = 'directonline' THEN
-	    #Mode_Name := 'directOnLine';
-	END_IF;
-	IF #optionsInterface.mode <>'direct' AND #optionsInterface.mode <>'directonline'THEN
-	    #Mode_Name := 'Error';
-	END_IF;
-	    
-	    
+	
 	// Motor Temperature Monitoring Management
 	//choix "None" ou "PTC" ou "Full"
 	IF #optionsInterface.motorTempMonitoring = 'none' THEN

@@ -1,0 +1,56 @@
+﻿TYPE "typeOptionDrive"
+VERSION : 0.1
+   STRUCT
+      mode : String [20] := 'direct';   // Choix ("direct", "directonline")
+      motorTempMonitoring : String [4] := 'none';   // Choix ("none", "ptc", "full")
+      isDriveMonitoring : Bool;   // Activation monitoring de la température
+      isHeater : Bool;   // Activation réchauffage
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION "FCT_ARM_X_DOL_AXIS" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      optionsInterface : "typeOptionDrive";
+      spAxisDrive : Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      Mode_Name : String;   // test d'affichage du mode
+      forwardMotionDrive : Bool;   // Ordre de marche
+      backwardMotionDrive : Bool;   // Ordre de arrière
+   END_VAR
+
+
+BEGIN
+	// Mode Management
+	//choix "direct" ou "directOnLine"
+	IF #optionsInterface.mode = 'directonline' THEN
+	    #Mode_Name := 'directOnLine';
+	    #forwardMotionDrive := TRUE;
+	ELSE
+	    #Mode_Name := 'Not Activated';
+	    #forwardMotionDrive := FALSE;
+	END_IF;
+	
+	
+	// Drive Setpoint Management
+	IF #spAxisDrive >= 0.1 AND #spAxisDrive <= 1.0 THEN
+	    #forwardMotionDrive := TRUE;
+	ELSE
+	    #forwardMotionDrive := FALSE;
+	END_IF;
+	IF #spAxisDrive >= -1.0 AND #spAxisDrive <= -0.1 THEN
+	    #backwardMotionDrive := TRUE;
+	ELSE
+	    #backwardMotionDrive := FALSE;
+	END_IF;
+	
+	IF #spAxisDrive = 0.0 THEN
+	    #forwardMotionDrive := FALSE;
+	    #backwardMotionDrive := FALSE;
+	END_IF;
+END_FUNCTION
+
