@@ -1,0 +1,68 @@
+﻿TYPE "typeOptionDrive"
+VERSION : 0.1
+   STRUCT
+      mode : String [20] := 'direct';   // Choix ("direct", "directonline")
+      motorTempMonitoring : String [4] := 'none';   // Choix ("none", "ptc", "full")
+      isDriveMonitoring : Bool;   // Activation monitoring de la température
+      isHeater : Bool;   // Activation réchauffage
+   END_STRUCT;
+
+END_TYPE
+
+TYPE "typeMotorTempInterfaceDrive"
+VERSION : 0.1
+   STRUCT
+      motorMaxTemp : Bool;   // Retour d'info du capteur PTC (contact sec)
+      motorTemp : Array[1..3] of Real;   // Retour d'infos des sondes PT100
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION "FCT_ARM_X_TEMP_AXIS" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      optionsInterface : "typeOptionDrive";
+      motorTempInterface : "typeMotorTempInterfaceDrive";
+      Val_seuil_PT100 : Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      Temp_Monitor_Name : String;
+      Seuil_Max_PTC_active : Bool;
+      Seuil_Max_PT100_active : Bool;
+   END_VAR
+
+
+BEGIN
+	// Motor Temperature Monitoring Management
+	//choix "None" ou "PTC" ou "Full"
+	IF #optionsInterface.motorTempMonitoring = 'none' THEN
+	    #Temp_Monitor_Name := 'none';
+	    #Seuil_Max_PTC_active := FALSE;
+	    #Seuil_Max_PT100_active := FALSE;
+	END_IF;
+	
+	IF #optionsInterface.motorTempMonitoring = 'ptc' OR #optionsInterface.motorTempMonitoring = 'full' THEN
+	    #Temp_Monitor_Name := 'PTC';
+	    IF #optionsInterface.isDriveMonitoring = TRUE AND #motorTempInterface.motorMaxTemp = TRUE THEN
+	        #Seuil_Max_PTC_active := TRUE;
+	        #Seuil_Max_PT100_active := FALSE;
+	    END_IF;
+	END_IF;
+	
+	IF #optionsInterface.motorTempMonitoring = 'full' THEN
+	    #Temp_Monitor_Name := 'full';
+	    IF #optionsInterface.isDriveMonitoring = TRUE AND #motorTempInterface.motorMaxTemp = TRUE AND
+	                                                                                              ((#motorTempInterface.motorTemp[1] > #Val_seuil_PT100) OR
+	                                                                                               (#motorTempInterface.motorTemp[2] > #Val_seuil_PT100) OR
+	                                                                                               (#motorTempInterface.motorTemp[3] > #Val_seuil_PT100)) THEN
+	        #Seuil_Max_PT100_active := TRUE;
+	    END_IF;
+	END_IF;
+	
+	IF #optionsInterface.motorTempMonitoring <> 'none' AND #optionsInterface.motorTempMonitoring <> 'ptc' AND #optionsInterface.motorTempMonitoring <> 'full' THEN
+	    #Temp_Monitor_Name := 'Error';
+	END_IF;
+END_FUNCTION
+

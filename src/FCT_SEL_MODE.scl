@@ -1,0 +1,41 @@
+﻿TYPE "typeOptionDrive"
+VERSION : 0.1
+   STRUCT
+      mode : String [20] := 'direct';   // Choix ("direct", "directonline")
+      motorTempMonitoring : String [4] := 'none';   // Choix ("none", "ptc", "full")
+      isDriveMonitoring : Bool;   // Activation monitoring de la température
+      isHeater : Bool;   // Activation réchauffage
+   END_STRUCT;
+
+END_TYPE
+
+FUNCTION "FCT_SEL_MODE" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      optionsInterface : "typeOptionDrive";
+   END_VAR
+
+   VAR_OUTPUT 
+      Mode_Name : String;   // test d'affichage du mode
+      activDirectMode : Bool;   // Activation du mode "direct"
+      activDirectOnLineMode : Bool;   // Activativation du mode "directOnLine"
+   END_VAR
+
+
+BEGIN
+	// Mode Management
+	//choix "direct" ou "directOnLine"
+	IF #optionsInterface.mode = 'direct' THEN
+	    #Mode_Name := 'direct';
+	    #activDirectMode := TRUE;
+	END_IF;
+	IF #optionsInterface.mode = 'directonline' THEN
+	    #Mode_Name := 'directOnLine';
+	    #activDirectOnLineMode := TRUE;
+	END_IF;
+	IF #optionsInterface.mode <> 'direct' AND #optionsInterface.mode <> 'directonline' THEN
+	    #Mode_Name := 'Error';
+	END_IF;
+END_FUNCTION
+
